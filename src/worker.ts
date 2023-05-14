@@ -38,6 +38,7 @@ const whitelist = {
   console: 1,
   setTimeout: 1,
   constructor: 1,
+  fetch: 1,
 };
 
 Object.getOwnPropertyNames(self).forEach((prop) => {
@@ -55,6 +56,7 @@ Object.getOwnPropertyNames(self).forEach((prop) => {
 function removeProto(currentProto: any) {
   Object.getOwnPropertyNames(currentProto).forEach((prop) => {
     // Just for testing
+    if (prop in whitelist) return;
     if (prop === "self") return;
 
     try {
@@ -78,7 +80,18 @@ removeProto(self.__proto__.__proto__);
 
 let port: MessagePort;
 
-self.onmessage = (msg) => {
+function userCodeWrapper(code: string) {
+  return `
+    async function usersCode() {
+      ${code}
+    }
+
+    const retValue = await usersCode();
+    retValue;
+  `;
+}
+
+self.onmessage = async (msg) => {
   if (msg.ports.length > 0 && port == null) {
     console.log("Setting up the port");
     port = msg.ports[0];
@@ -86,6 +99,9 @@ self.onmessage = (msg) => {
     return;
   }
 
-  const s = eval(msg.data);
-  port.postMessage(s);
+  const result = await Object.getPrototypeOf(async function () {}).constructor(
+    msg.data
+  )();
+
+  port.postMessage(result);
 };
