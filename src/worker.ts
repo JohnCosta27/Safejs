@@ -71,7 +71,9 @@ function removeProto(currentProto: any) {
   });
 }
 
+// @ts-ignore
 removeProto(self.__proto__);
+// @ts-ignore
 removeProto(self.__proto__.__proto__);
 
 let port: MessagePort;
