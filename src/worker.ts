@@ -1,7 +1,3 @@
-console.log("Hello, from thread");
-
-console.log(self);
-
 const whitelist = {
   self: 1,
   postMessage: 1,
@@ -12,6 +8,7 @@ const whitelist = {
   Boolean: 1,
   Date: 1,
   Function: 1,
+  Promise: 1,
   Number: 1,
   Object: 1,
   RegExp: 1,
@@ -48,6 +45,7 @@ Object.getOwnPropertyNames(self).forEach((prop) => {
 
   Object.defineProperty(self, prop, {
     get: () => {
+      port.postMessage("stop using " + prop);
       throw new Error("Security Exception - cannot access: " + prop);
     },
     configurable: false,
@@ -56,26 +54,36 @@ Object.getOwnPropertyNames(self).forEach((prop) => {
 
 function removeProto(currentProto: any) {
   Object.getOwnPropertyNames(currentProto).forEach((prop) => {
-    console.log(prop);
-
     // Just for testing
     if (prop === "self") return;
 
     try {
       Object.defineProperty(currentProto, prop, {
         get: () => {
+          port.postMessage("stop using " + prop);
           throw new Error("Security Exception - cannot access: " + prop);
         },
         configurable: false,
       });
     } catch (e) {
-      console.log(e);
+      // console.log(e);
     }
   });
 }
 
 removeProto(self.__proto__);
-console.log("------");
 removeProto(self.__proto__.__proto__);
-console.log("Removed proto");
-console.log(self);
+
+let port: MessagePort;
+
+self.onmessage = (msg) => {
+  if (msg.ports.length > 0 && port == null) {
+    console.log("Setting up the port");
+    port = msg.ports[0];
+    port.postMessage("yooo from worker");
+    return;
+  }
+
+  const s = eval(msg.data);
+  port.postMessage(s);
+};

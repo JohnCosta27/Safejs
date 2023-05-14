@@ -1,29 +1,44 @@
 import "./style.css";
 
 const text = document.getElementById("input") as HTMLTextAreaElement;
+const out = document.getElementById("output") as HTMLDivElement;
 const execute = document.getElementById("execute") as HTMLButtonElement;
+
+const chan = new MessageChannel();
+chan.port1.onmessage = (msg) => {
+  console.log(msg);
+  out.innerText = msg.data;
+};
 
 // Load Web Workers
 import Worker from "./worker.ts?worker";
 const worker = new Worker();
-console.log(worker);
-
-function blockThread(n: number): Promise<void> {
-  return new Promise((resolve) => {
-    const time = new Date().getTime() + n;
-
-    while (new Date().getTime() < time) {}
-
-    resolve();
-  });
-}
+worker.postMessage("", [chan.port2]);
 
 /*
-blockThread(2000).then(() => {
-  console.log("unblock");
-});
+worker.postMessage("1 + 1");
+worker.postMessage(`
+  function blockThread(n) {
+    return new Promise((r) => {
+
+      const time = new Date().getTime() + n;
+      while (new Date().getTime() < time) {}
+
+      r();
+    })
+  }
+  blockThread(2000);
+
+  100 + 200
+`);
 */
 
 execute.onclick = () => {
-  console.log(text.value);
+  worker.postMessage(text.value);
 };
+
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && e.shiftKey) {
+    worker.postMessage(text.value);
+  }
+});
