@@ -136,6 +136,11 @@ self.onmessage = async (msg) => {
     msg.data
   )();
 
+  if (!result) {
+    port.postMessage("Nothing returned");
+    return;
+  }
+
   try {
     const parsedResult = JSON.stringify(result);
     if (parsedResult.length > MAX_RETURN) {
