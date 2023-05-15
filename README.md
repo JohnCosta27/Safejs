@@ -7,3 +7,5 @@ This rules out a few things, we cannot run user supplied code on the main thread
 ## Web Workers
 
 [MDN Web Workers](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers) states that web workers are a way to run background jobs away from the main thread. The web worker can also communicate with the main thread that created it. By default you cannot do DOM manipulations using web workers (one of our concerns), but you can access some of the `window` object (Such as IndexedDB).
+
+To view what a web worker has access so, we can `console.log(self)`:

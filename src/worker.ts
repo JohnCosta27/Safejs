@@ -53,6 +53,37 @@ Object.getOwnPropertyNames(self).forEach((prop) => {
   });
 });
 
+// @ts-ignore
+Object.defineProperty(Array.prototype, "join", {
+  writable: false,
+  configurable: false,
+  value: (function (old) {
+    // @ts-ignore
+    return function (arg) {
+      // @ts-ignore
+      if (this.length > 500 || (arg && arg.length > 500)) {
+        throw "Exception: too many items";
+      }
+
+      // @ts-ignore
+      return old.apply(this, arguments);
+    };
+  })(Array.prototype.join),
+});
+
+const arProt = Array.prototype;
+
+// @ts-ignore
+Array = function (args) {
+  if (args && args > 500) {
+    throw "Exception: too many items";
+  }
+  return arProt.constructor(args);
+};
+
+// @ts-ignore
+Array.prototype = arProt;
+
 function removeProto(currentProto: any) {
   Object.getOwnPropertyNames(currentProto).forEach((prop) => {
     // Just for testing
@@ -91,6 +122,8 @@ function userCodeWrapper(code: string) {
   `;
 }
 
+const MAX_RETURN = 20000;
+
 self.onmessage = async (msg) => {
   if (msg.ports.length > 0 && port == null) {
     console.log("Setting up the port");
@@ -103,5 +136,15 @@ self.onmessage = async (msg) => {
     msg.data
   )();
 
-  port.postMessage(result);
+  try {
+    const parsedResult = JSON.stringify(result);
+    if (parsedResult.length > MAX_RETURN) {
+      port.postMessage("Result was too long");
+      return;
+    }
+
+    port.postMessage(result);
+  } catch (e) {
+    port.postMessage("JSON stringify went kaput " + e);
+  }
 };
